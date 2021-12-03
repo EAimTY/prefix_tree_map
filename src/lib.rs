@@ -63,54 +63,51 @@ where
     }
 
     pub fn get(&self, key: &[P], wildcards: &mut BTreeMap<P, P>) -> Option<&V> {
-        unsafe {
-            let mut node: *const Node<P, V> = &self.root;
+        let mut node = &self.root;
 
-            for part in key {
-                (*node).children.as_ref()?;
+        for part in key {
+            node.children.as_ref()?;
 
-                let children = (*node).children.as_ref().unwrap();
+            let children = node.children.as_ref().unwrap();
 
-                if let Some(child) = children.iter().find(|node| {
-                    let key = node.key.as_ref().unwrap();
-                    key.is_wildcard() || key.as_ref() == Path::Exact(part)
-                }) {
-                    let key = child.key.as_ref().unwrap();
+            if let Some(child) = children.iter().find(|node| {
+                let key = node.key.as_ref().unwrap();
+                key.is_wildcard() || key.as_ref() == Path::Exact(part)
+            }) {
+                let key = child.key.as_ref().unwrap();
 
-                    if key.is_wildcard() {
-                        wildcards.insert(key.as_ref().unwrap().to_owned(), part.to_owned());
-                    }
-
-                    node = child;
-                } else {
-                    return None;
+                if key.is_wildcard() {
+                    wildcards.insert(key.as_ref().unwrap().to_owned(), part.to_owned());
                 }
-            }
 
-            (*node).value.as_ref()
+                node = child;
+            } else {
+                return None;
+            }
         }
+
+        node.value.as_ref()
     }
 
     pub fn get_exact(&self, key: &[P]) -> Option<&V> {
-        unsafe {
-            let mut node: *const Node<P, V> = &self.root;
+        let mut node = &self.root;
 
-            for part in key {
-                (*node).children.as_ref()?;
+        for part in key {
+            node.children.as_ref()?;
 
-                let children = (*node).children.as_ref().unwrap();
+            let children = node.children.as_ref().unwrap();
 
-                if let Some(child) = children.iter().find(|node| {
-                    node.key.as_ref().map(|key| key.as_ref()) == Some(Path::Exact(part))
-                }) {
-                    node = child;
-                } else {
-                    return None;
-                }
+            if let Some(child) = children
+                .iter()
+                .find(|node| node.key.as_ref().map(|key| key.as_ref()) == Some(Path::Exact(part)))
+            {
+                node = child;
+            } else {
+                return None;
             }
-
-            (*node).value.as_ref()
         }
+
+        node.value.as_ref()
     }
 }
 
