@@ -1,24 +1,26 @@
+use std::collections::BTreeMap;
+
 #[derive(Clone)]
-pub struct TrieMap<K, V> {
-    root: Node<K, V>,
+pub struct TrieMap<P, V> {
+    root: Node<P, V>,
 }
 
 #[derive(Clone)]
-struct Node<K, V> {
-    key: Option<Key<K>>,
+struct Node<P, V> {
+    key: Option<Path<P>>,
     value: Option<V>,
-    children: Option<Vec<Node<K, V>>>,
+    children: Option<Vec<Node<P, V>>>,
 }
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Key<K> {
-    Exact(K),
-    Wildcard(K),
+pub enum Path<P> {
+    Exact(P),
+    Wildcard(P),
 }
 
-impl<K, V> TrieMap<K, V>
+impl<P, V> TrieMap<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
     pub fn new() -> Self {
         Self {
@@ -30,9 +32,9 @@ where
         }
     }
 
-    pub fn insert(&mut self, key: impl IntoIterator<Item = Key<K>>, value: V) {
+    pub fn insert(&mut self, key: impl IntoIterator<Item = Path<P>>, value: V) {
         unsafe {
-            let mut node: *mut Node<K, V> = &mut self.root;
+            let mut node: *mut Node<P, V> = &mut self.root;
 
             for part in key {
                 if (*node).children.is_none() {
@@ -43,11 +45,11 @@ where
                 } else {
                     let children = (*node).children.as_mut().unwrap();
 
-                    if let Some(same_node) = children
+                    if let Some(child) = children
                         .iter_mut()
                         .find(|node| node.key.as_ref() == Some(&part))
                     {
-                        node = same_node;
+                        node = child;
                     }
                 }
             }
@@ -56,23 +58,52 @@ where
         }
     }
 
-    pub fn insert_exact(&mut self, key: impl IntoIterator<Item = K>, value: V) {
-        self.insert(key.into_iter().map(Key::Exact), value);
+    pub fn insert_exact(&mut self, key: impl IntoIterator<Item = P>, value: V) {
+        self.insert(key.into_iter().map(Path::Exact), value);
     }
 
-    pub fn get_exact(&self, key: &[K]) -> Option<&V> {
+    pub fn get(&self, key: &[P], wildcards: &mut BTreeMap<P, P>) -> Option<&V> {
         unsafe {
-            let mut node: *const Node<K, V> = &self.root;
+            let mut node: *const Node<P, V> = &self.root;
 
             for part in key {
                 (*node).children.as_ref()?;
 
                 let children = (*node).children.as_ref().unwrap();
 
-                if let Some(same_node) = children.iter().find(|node| {
-                    node.key.as_ref().map(|key| key.as_ref()) == Some(Key::Exact(part))
+                if let Some(child) = children.iter().find(|node| {
+                    let key = node.key.as_ref().unwrap();
+                    key.is_wildcard() || key.as_ref() == Path::Exact(part)
                 }) {
-                    node = same_node;
+                    let key = child.key.as_ref().unwrap();
+
+                    if key.is_wildcard() {
+                        wildcards.insert(key.as_ref().unwrap().to_owned(), part.to_owned());
+                    }
+
+                    node = child;
+                } else {
+                    return None;
+                }
+            }
+
+            (*node).value.as_ref()
+        }
+    }
+
+    pub fn get_exact(&self, key: &[P]) -> Option<&V> {
+        unsafe {
+            let mut node: *const Node<P, V> = &self.root;
+
+            for part in key {
+                (*node).children.as_ref()?;
+
+                let children = (*node).children.as_ref().unwrap();
+
+                if let Some(child) = children.iter().find(|node| {
+                    node.key.as_ref().map(|key| key.as_ref()) == Some(Path::Exact(part))
+                }) {
+                    node = child;
                 } else {
                     return None;
                 }
@@ -83,29 +114,44 @@ where
     }
 }
 
-impl<K, V> Default for TrieMap<K, V>
+impl<P, V> Default for TrieMap<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K> Key<K> {
-    fn as_ref(&self) -> Key<&K> {
+impl<P> Path<P> {
+    pub fn as_ref(&self) -> Path<&P> {
         match self {
-            Key::Exact(key) => Key::Exact(key),
-            Key::Wildcard(key) => Key::Wildcard(key),
+            Path::Exact(key) => Path::Exact(key),
+            Path::Wildcard(key) => Path::Wildcard(key),
         }
+    }
+
+    pub fn unwrap(self) -> P {
+        match self {
+            Path::Exact(key) => key,
+            Path::Wildcard(key) => key,
+        }
+    }
+
+    pub fn is_wildcard(&self) -> bool {
+        matches!(self, Path::Wildcard(_))
+    }
+
+    pub fn is_exact(&self) -> bool {
+        matches!(self, Path::Exact(_))
     }
 }
 
-impl<K, V> Node<K, V>
+impl<P, V> Node<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
-    fn new(key: Key<K>, value: Option<V>) -> Self {
+    fn new(key: Path<P>, value: Option<V>) -> Self {
         Self {
             key: Some(key),
             value,
@@ -114,29 +160,29 @@ where
     }
 }
 
-impl<K, V> PartialEq for Node<K, V>
+impl<P, V> PartialEq for Node<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
     }
 }
 
-impl<K, V> Eq for Node<K, V> where K: PartialEq + Ord {}
+impl<P, V> Eq for Node<P, V> where P: Ord + PartialEq + ToOwned<Owned = P> {}
 
-impl<K, V> PartialOrd for Node<K, V>
+impl<P, V> PartialOrd for Node<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.key.partial_cmp(&other.key)
     }
 }
 
-impl<K, V> Ord for Node<K, V>
+impl<P, V> Ord for Node<P, V>
 where
-    K: PartialEq + Ord,
+    P: Ord + PartialEq + ToOwned<Owned = P>,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key.cmp(&other.key)
