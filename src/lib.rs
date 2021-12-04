@@ -123,7 +123,7 @@ where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
-    pub fn get(&self, key: &[E], param_map: &mut dyn Map<W, E>) -> Option<&V> {
+    pub fn get<M: Map<W, E>>(&self, key: &[E], param_map: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
