@@ -18,8 +18,8 @@ struct NodeBuilder<E, W, V> {
 
 impl<E, W, V> TrieMapBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     pub fn new() -> Self {
         Self {
@@ -103,8 +103,8 @@ where
 
 impl<E, W, V> Default for TrieMapBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn default() -> Self {
         Self::new()
@@ -113,8 +113,8 @@ where
 
 impl<E, W, V> NodeBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn new(key_part: KeyPart<E, W>) -> Self {
         Self {
@@ -127,8 +127,8 @@ where
 
 impl<E, W, V> PartialEq for NodeBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn eq(&self, other: &Self) -> bool {
         self.key_part == other.key_part
@@ -137,15 +137,15 @@ where
 
 impl<E, W, V> Eq for NodeBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
 }
 
 impl<E, W, V> PartialOrd for NodeBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.key_part.partial_cmp(&other.key_part)
@@ -154,8 +154,8 @@ where
 
 impl<E, W, V> Ord for NodeBuilder<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key_part.cmp(&other.key_part)

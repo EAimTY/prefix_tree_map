@@ -14,8 +14,8 @@ pub(crate) struct Node<E, W, V> {
 
 impl<E, W, V> TrieMap<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     pub fn get<M: CaptureMap<W, E>>(&self, key: &[E], param_map: &mut M) -> Option<&V> {
         let mut node = &self.root;
@@ -107,8 +107,8 @@ where
 
 impl<E, W, V> PartialEq for Node<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn eq(&self, other: &Self) -> bool {
         self.key_part == other.key_part
@@ -117,15 +117,15 @@ where
 
 impl<E, W, V> Eq for Node<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
 }
 
 impl<E, W, V> PartialOrd for Node<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.key_part.partial_cmp(&other.key_part)
@@ -134,8 +134,8 @@ where
 
 impl<E, W, V> Ord for Node<E, W, V>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key_part.cmp(&other.key_part)

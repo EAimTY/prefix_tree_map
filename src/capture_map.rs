@@ -7,8 +7,8 @@ pub trait CaptureMap<W, E> {
 
 impl<W, E> CaptureMap<W, E> for BTreeMap<W, E>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn insert(&mut self, key: W, value: E) {
         self.insert(key, value);

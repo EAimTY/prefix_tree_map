@@ -33,8 +33,8 @@ impl<E, W> KeyPart<E, W> {
 
 impl<E, W> PartialOrd for KeyPart<E, W>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn partial_cmp(&self, other: &KeyPart<E, W>) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -43,8 +43,8 @@ where
 
 impl<E, W> Ord for KeyPart<E, W>
 where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
+    E: Clone + Ord,
+    W: Clone + Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
