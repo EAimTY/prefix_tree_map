@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 #[derive(Debug, Clone)]
 pub struct TrieMap<P, V> {
     root: Node<P, V>,
@@ -18,7 +20,7 @@ pub enum Path<P> {
 
 impl<P, V> TrieMap<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     pub fn new() -> Self {
         Self {
@@ -84,7 +86,7 @@ where
                     let key = node.key.as_ref().unwrap();
                     key.is_wildcard()
                 }) {
-                    wildcards.push((current_part_idx + 1, wildcard));
+                    wildcards.push((current_part_idx, wildcard));
                 }
 
                 if let Some(child) = children.iter().find(|node| {
@@ -135,7 +137,7 @@ where
 
 impl<P, V> Default for TrieMap<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     fn default() -> Self {
         Self::new()
@@ -168,7 +170,7 @@ impl<P> Path<P> {
 
 impl<P, V> Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     fn new(key: Path<P>) -> Self {
         Self {
@@ -181,18 +183,18 @@ where
 
 impl<P, V> PartialEq for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
     }
 }
 
-impl<P, V> Eq for Node<P, V> where P: Ord + PartialEq + ToOwned<Owned = P> {}
+impl<P, V> Eq for Node<P, V> where P: Ord + PartialEq + ToOwned<Owned = P> + Debug {}
 
 impl<P, V> PartialOrd for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.key.partial_cmp(&other.key)
@@ -201,7 +203,7 @@ where
 
 impl<P, V> Ord for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P>,
+    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key.cmp(&other.key)

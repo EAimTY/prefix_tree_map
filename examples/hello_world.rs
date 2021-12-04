@@ -16,8 +16,7 @@ fn main() {
         "again",
     );
 
-    println!("{:#?}", trie);
-    // println!("{}", trie.get_exact(&[1, 2, 3]).unwrap());
+    println!("{}", trie.get_exact(&[1, 2, 3]).unwrap());
 
     // let mut map = BTreeMap::new();
     println!("{}", trie.get(&[1, 2, 3, 4]).unwrap());
