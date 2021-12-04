@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BinaryHeap};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BinaryHeap},
+};
 
 #[derive(Clone)]
 pub struct TrieMap<P, V> {
@@ -24,7 +27,7 @@ struct NodeBuilder<P, V> {
     children: Option<BinaryHeap<NodeBuilder<P, V>>>,
 }
 
-#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum Path<P> {
     Exact(P),
     Wildcard(P),
@@ -220,6 +223,38 @@ impl<P> Path<P> {
 
     pub fn is_exact(&self) -> bool {
         matches!(self, Path::Exact(_))
+    }
+}
+
+impl<P> PartialOrd for Path<P>
+where
+    P: Clone + Ord + PartialEq,
+{
+    fn partial_cmp(&self, other: &Path<P>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<P> Ord for Path<P>
+where
+    P: Clone + Ord + PartialEq,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Path::Exact(key), Path::Exact(other_key)) => key.cmp(other_key),
+            (Path::Wildcard(key), Path::Wildcard(other_key)) => key.cmp(other_key),
+            (Path::Exact(_), Path::Wildcard(_)) => Ordering::Greater,
+            (Path::Wildcard(_), Path::Exact(_)) => Ordering::Less,
+        }
+    }
+}
+
+impl<P, V> Default for TrieMapBuilder<P, V>
+where
+    P: Clone + Ord + PartialEq,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
