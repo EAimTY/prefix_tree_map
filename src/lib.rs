@@ -1,18 +1,16 @@
-use std::collections::BTreeMap;
-
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TrieMap<P, V> {
     root: Node<P, V>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Node<P, V> {
     key: Option<Path<P>>,
     value: Option<V>,
     children: Option<Vec<Node<P, V>>>,
 }
 
-#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Path<P> {
     Exact(P),
     Wildcard(P),
@@ -38,7 +36,7 @@ where
 
             for part in key {
                 if (*node).children.is_none() {
-                    let children = vec![Node::new(part, None)];
+                    let children = vec![Node::new(part)];
                     (*node).children = Some(children);
 
                     node = &mut (*node).children.as_mut().unwrap()[0];
@@ -50,6 +48,10 @@ where
                         .find(|node| node.key.as_ref() == Some(&part))
                     {
                         node = child;
+                    } else {
+                        children.push(Node::new(part));
+                        let child_idx = children.len() - 1;
+                        node = &mut children[child_idx];
                     }
                 }
             }
@@ -62,27 +64,47 @@ where
         self.insert(key.into_iter().map(Path::Exact), value);
     }
 
-    pub fn get(&self, key: &[P], wildcards: &mut BTreeMap<P, P>) -> Option<&V> {
+    pub fn get(&self, key: &[P]) -> Option<&V> {
         let mut node = &self.root;
 
-        for part in key {
-            node.children.as_ref()?;
+        let mut wildcards = Vec::new();
+        let mut current_part_idx = 0usize;
 
-            let children = node.children.as_ref().unwrap();
+        let mut part_iter = key.iter();
 
-            if let Some(child) = children.iter().find(|node| {
-                let key = node.key.as_ref().unwrap();
-                key.is_wildcard() || key.as_ref() == Path::Exact(part)
-            }) {
-                let key = child.key.as_ref().unwrap();
+        while let Some(part) = part_iter.next() {
+            current_part_idx += 1;
 
-                if key.is_wildcard() {
-                    wildcards.insert(key.as_ref().unwrap().to_owned(), part.to_owned());
+            let mut try_backtrack = node.children.is_none();
+
+            if !try_backtrack {
+                let children = node.children.as_ref().unwrap();
+
+                if let Some(wildcard) = children.iter().find(|node| {
+                    let key = node.key.as_ref().unwrap();
+                    key.is_wildcard()
+                }) {
+                    wildcards.push((current_part_idx + 1, wildcard));
                 }
 
-                node = child;
-            } else {
-                return None;
+                if let Some(child) = children.iter().find(|node| {
+                    let key = node.key.as_ref().unwrap();
+                    key.as_ref() == Path::Exact(part)
+                }) {
+                    node = child;
+                } else {
+                    try_backtrack = true;
+                }
+            }
+
+            if try_backtrack {
+                if let Some((idx, wildcard_node)) = wildcards.pop() {
+                    current_part_idx = idx;
+                    part_iter = key[idx..].iter();
+                    node = wildcard_node;
+                } else {
+                    return None;
+                }
             }
         }
 
@@ -148,10 +170,10 @@ impl<P, V> Node<P, V>
 where
     P: Ord + PartialEq + ToOwned<Owned = P>,
 {
-    fn new(key: Path<P>, value: Option<V>) -> Self {
+    fn new(key: Path<P>) -> Self {
         Self {
             key: Some(key),
-            value,
+            value: None,
             children: None,
         }
     }
