@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::BTreeMap, fmt::Debug};
 
 #[derive(Debug, Clone)]
 pub struct TrieMap<P, V> {
@@ -66,11 +66,12 @@ where
         self.insert(key.into_iter().map(Path::Exact), value);
     }
 
-    pub fn get(&self, key: &[P]) -> Option<&V> {
+    pub fn get(&self, key: &[P], param_map: &mut BTreeMap<P, P>) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
-        let mut current_part_idx = 0usize;
+        let mut last_wildcard: Option<&Node<P, V>> = None;
+        let mut current_part_idx = 0;
 
         let mut part_iter = key.iter();
 
@@ -101,6 +102,17 @@ where
 
             if try_backtrack {
                 if let Some((idx, wildcard_node)) = wildcards.pop() {
+                    if let Some(last_wildcard) = last_wildcard {
+                        let last_key = last_wildcard.key.as_ref().unwrap().as_ref().unwrap();
+                        param_map.remove(last_key);
+                    }
+
+                    let wildcard_key = wildcard_node.key.as_ref().unwrap().as_ref().unwrap();
+                    let wildcard_value = &key[idx - 1];
+                    param_map.insert(wildcard_key.to_owned(), wildcard_value.to_owned());
+
+                    last_wildcard = Some(wildcard_node);
+
                     current_part_idx = idx;
                     part_iter = key[idx..].iter();
                     node = wildcard_node;

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-
 use trie_map::{Path, TrieMap};
 
 fn main() {
@@ -18,7 +17,7 @@ fn main() {
 
     println!("{}", trie.get_exact(&[1, 2, 3]).unwrap());
 
-    // let mut map = BTreeMap::new();
-    println!("{}", trie.get(&[1, 2, 3, 4]).unwrap());
-    // println!("{:?}", map);
+    let mut map = BTreeMap::new();
+    println!("{}", trie.get(&[1, 2, 3, 4], &mut map).unwrap());
+    println!("{:?}", map);
 }
