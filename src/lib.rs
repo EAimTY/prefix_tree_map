@@ -123,7 +123,7 @@ where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
-    pub fn get(&self, key: &[E], param_map: &mut BTreeMap<W, E>) -> Option<&V> {
+    pub fn get(&self, key: &[E], param_map: &mut dyn Map<W, E>) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
@@ -219,20 +219,20 @@ impl<E, W> Path<E, W> {
         }
     }
 
-    pub fn unwrap_wildcard(self) -> W {
-        if let Path::Wildcard(key) = self {
-            key
-        } else {
-            panic!("Wrong path type");
-        }
-    }
-
     pub fn is_wildcard(&self) -> bool {
         matches!(self, Path::Wildcard(_))
     }
 
     pub fn is_exact(&self) -> bool {
         matches!(self, Path::Exact(_))
+    }
+
+    fn unwrap_wildcard(self) -> W {
+        if let Path::Wildcard(key) = self {
+            key
+        } else {
+            panic!("Wrong path type");
+        }
     }
 }
 
@@ -257,30 +257,6 @@ where
             (Path::Wildcard(key), Path::Wildcard(other_key)) => key.cmp(other_key),
             (Path::Exact(_), Path::Wildcard(_)) => Ordering::Greater,
             (Path::Wildcard(_), Path::Exact(_)) => Ordering::Less,
-        }
-    }
-}
-
-impl<E, W, V> Default for TrieMapBuilder<E, W, V>
-where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<E, W, V> NodeBuilder<E, W, V>
-where
-    E: Clone + Ord + PartialEq,
-    W: Clone + Ord + PartialEq,
-{
-    fn new(key: Path<E, W>) -> Self {
-        Self {
-            key: Some(key),
-            value: None,
-            children: None,
         }
     }
 }
@@ -322,6 +298,30 @@ where
     }
 }
 
+impl<E, W, V> Default for TrieMapBuilder<E, W, V>
+where
+    E: Clone + Ord + PartialEq,
+    W: Clone + Ord + PartialEq,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<E, W, V> NodeBuilder<E, W, V>
+where
+    E: Clone + Ord + PartialEq,
+    W: Clone + Ord + PartialEq,
+{
+    fn new(key: Path<E, W>) -> Self {
+        Self {
+            key: Some(key),
+            value: None,
+            children: None,
+        }
+    }
+}
+
 impl<E, W, V> PartialEq for NodeBuilder<E, W, V>
 where
     E: Clone + Ord + PartialEq,
@@ -356,5 +356,24 @@ where
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key.cmp(&other.key)
+    }
+}
+
+pub trait Map<W, E> {
+    fn insert(&mut self, key: W, value: E);
+    fn remove(&mut self, key: &W);
+}
+
+impl<W, E> Map<W, E> for BTreeMap<W, E>
+where
+    E: Clone + Ord + PartialEq,
+    W: Clone + Ord + PartialEq,
+{
+    fn insert(&mut self, key: W, value: E) {
+        self.insert(key, value);
+    }
+
+    fn remove(&mut self, key: &W) {
+        self.remove(key);
     }
 }
