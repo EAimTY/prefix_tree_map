@@ -17,7 +17,51 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    pub fn get<M: CaptureMap<W, E>>(&self, key: &[E], param_map: &mut M) -> Option<&V> {
+    pub fn find(&self, key: &[E]) -> Option<&V> {
+        let mut node = &self.root;
+
+        let mut wildcards = Vec::new();
+
+        let mut key_part_iter = key.iter();
+        let mut key_part_idx = 0;
+
+        while let Some(key_part) = key_part_iter.next() {
+            key_part_idx += 1;
+
+            let mut try_backtrack = node.children.is_none();
+
+            if !try_backtrack {
+                let children = node.children.as_ref().unwrap();
+
+                if children[0].key_part.as_ref().unwrap().is_wildcard() {
+                    wildcards.push((key_part_idx, &children[0]));
+                }
+
+                if let Ok(child_idx) = children.binary_search_by(|child| {
+                    let child_key_part = child.key_part.as_ref().unwrap();
+                    child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
+                }) {
+                    node = &children[child_idx];
+                } else {
+                    try_backtrack = true;
+                }
+            }
+
+            if try_backtrack {
+                if let Some((wildcard_key_part_idx, wildcard_node)) = wildcards.pop() {
+                    key_part_idx = wildcard_key_part_idx;
+                    key_part_iter = key[wildcard_key_part_idx..].iter();
+                    node = wildcard_node;
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        node.value.as_ref()
+    }
+
+    pub fn find_and_capture<M: CaptureMap<W, E>>(&self, key: &[E], captures: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
@@ -57,7 +101,7 @@ where
                             .unwrap()
                             .as_ref()
                             .unwrap_wildcard();
-                        param_map.remove(last_wildcard_key_part);
+                        captures.remove(last_wildcard_key_part);
                     }
 
                     let wildcard_key_part = wildcard_node
@@ -67,7 +111,7 @@ where
                         .as_ref()
                         .unwrap_wildcard();
                     let matched_key_part = &key[wildcard_key_part_idx - 1];
-                    param_map.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
+                    captures.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
 
                     last_wildcard_node = Some(wildcard_node);
 
@@ -83,7 +127,7 @@ where
         node.value.as_ref()
     }
 
-    pub fn get_exact(&self, key: &[E]) -> Option<&V> {
+    pub fn find_exact(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 
         for key_part in key {

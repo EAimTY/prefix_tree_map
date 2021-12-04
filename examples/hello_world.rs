@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use trie_map::{KeyPart, TrieMapBuilder};
 
 fn main() {
@@ -20,9 +20,12 @@ fn main() {
 
     let trie = trie.build();
 
-    println!("{}", trie.get_exact(&[1, 2, 3]).unwrap());
+    println!("{}", trie.find_exact(&[1, 2, 3]).unwrap());
 
-    let mut map = BTreeMap::new();
-    println!("{}", trie.get(&[1, 22, 3, 4], &mut map).unwrap());
+    let mut map = HashMap::new();
+    println!(
+        "{}",
+        trie.find_and_capture(&[1, 22, 3, 4], &mut map).unwrap()
+    );
     println!("{:?}", map);
 }
