@@ -1,30 +1,42 @@
-use std::{collections::BTreeMap, fmt::Debug};
+use std::collections::{BTreeMap, BinaryHeap};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TrieMap<P, V> {
     root: Node<P, V>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+pub struct TrieMapBuilder<P, V> {
+    root: NodeBuilder<P, V>,
+}
+
+#[derive(Clone)]
 struct Node<P, V> {
     key: Option<Path<P>>,
     value: Option<V>,
     children: Option<Vec<Node<P, V>>>,
 }
 
-#[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone)]
+struct NodeBuilder<P, V> {
+    key: Option<Path<P>>,
+    value: Option<V>,
+    children: Option<BinaryHeap<NodeBuilder<P, V>>>,
+}
+
+#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Path<P> {
     Exact(P),
     Wildcard(P),
 }
 
-impl<P, V> TrieMap<P, V>
+impl<P, V> TrieMapBuilder<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
+    P: Clone + Ord + PartialEq,
 {
     pub fn new() -> Self {
         Self {
-            root: Node {
+            root: NodeBuilder {
                 key: None,
                 value: None,
                 children: None,
@@ -34,26 +46,36 @@ where
 
     pub fn insert(&mut self, key: impl IntoIterator<Item = Path<P>>, value: V) {
         unsafe {
-            let mut node: *mut Node<P, V> = &mut self.root;
+            let mut node: *mut NodeBuilder<P, V> = &mut self.root;
 
             for part in key {
                 if (*node).children.is_none() {
-                    let children = vec![Node::new(part)];
+                    let mut children = BinaryHeap::new();
+                    children.push(NodeBuilder::new(part));
                     (*node).children = Some(children);
 
-                    node = &mut (*node).children.as_mut().unwrap()[0];
+                    let child = (*node).children.as_ref().unwrap().peek().unwrap();
+                    let child_const_ptr = child as *const NodeBuilder<P, V>;
+                    node = child_const_ptr as *mut NodeBuilder<P, V>;
                 } else {
                     let children = (*node).children.as_mut().unwrap();
 
                     if let Some(child) = children
-                        .iter_mut()
+                        .iter()
                         .find(|node| node.key.as_ref() == Some(&part))
                     {
-                        node = child;
+                        let child_const_ptr = child as *const NodeBuilder<P, V>;
+                        node = child_const_ptr as *mut NodeBuilder<P, V>;
                     } else {
-                        children.push(Node::new(part));
-                        let child_idx = children.len() - 1;
-                        node = &mut children[child_idx];
+                        let part_cloned = part.clone();
+                        children.push(NodeBuilder::new(part_cloned));
+
+                        let child = children
+                            .iter()
+                            .find(|node| node.key.as_ref() == Some(&part))
+                            .unwrap();
+                        let child_const_ptr = child as *const NodeBuilder<P, V>;
+                        node = child_const_ptr as *mut NodeBuilder<P, V>;
                     }
                 }
             }
@@ -66,6 +88,36 @@ where
         self.insert(key.into_iter().map(Path::Exact), value);
     }
 
+    pub fn build(self) -> TrieMap<P, V> {
+        TrieMap {
+            root: Self::node_builder_to_node(self.root),
+        }
+    }
+
+    fn node_builder_to_node(node_builder: NodeBuilder<P, V>) -> Node<P, V> {
+        let key = node_builder.key;
+        let value = node_builder.value;
+
+        let children = node_builder.children.map(|children| {
+            children
+                .into_sorted_vec()
+                .into_iter()
+                .map(Self::node_builder_to_node)
+                .collect()
+        });
+
+        Node {
+            key,
+            value,
+            children,
+        }
+    }
+}
+
+impl<P, V> TrieMap<P, V>
+where
+    P: Clone + Ord + PartialEq,
+{
     pub fn get(&self, key: &[P], param_map: &mut BTreeMap<P, P>) -> Option<&V> {
         let mut node = &self.root;
 
@@ -147,15 +199,6 @@ where
     }
 }
 
-impl<P, V> Default for TrieMap<P, V>
-where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<P> Path<P> {
     pub fn as_ref(&self) -> Path<&P> {
         match self {
@@ -180,9 +223,9 @@ impl<P> Path<P> {
     }
 }
 
-impl<P, V> Node<P, V>
+impl<P, V> NodeBuilder<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
+    P: Clone + Ord + PartialEq,
 {
     fn new(key: Path<P>) -> Self {
         Self {
@@ -195,18 +238,18 @@ where
 
 impl<P, V> PartialEq for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
+    P: Clone + Ord + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
     }
 }
 
-impl<P, V> Eq for Node<P, V> where P: Ord + PartialEq + ToOwned<Owned = P> + Debug {}
+impl<P, V> Eq for Node<P, V> where P: Clone + Ord + PartialEq {}
 
 impl<P, V> PartialOrd for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
+    P: Clone + Ord + PartialEq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.key.partial_cmp(&other.key)
@@ -215,7 +258,36 @@ where
 
 impl<P, V> Ord for Node<P, V>
 where
-    P: Ord + PartialEq + ToOwned<Owned = P> + Debug,
+    P: Clone + Ord + PartialEq,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
+impl<P, V> PartialEq for NodeBuilder<P, V>
+where
+    P: Clone + Ord + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+
+impl<P, V> Eq for NodeBuilder<P, V> where P: Clone + Ord + PartialEq {}
+
+impl<P, V> PartialOrd for NodeBuilder<P, V>
+where
+    P: Clone + Ord + PartialEq,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(&other.key)
+    }
+}
+
+impl<P, V> Ord for NodeBuilder<P, V>
+where
+    P: Clone + Ord + PartialEq,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.key.cmp(&other.key)
