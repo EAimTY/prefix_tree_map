@@ -10,7 +10,7 @@ pub struct TrieMap<E, W, V> {
 
 #[derive(Clone)]
 struct Node<E, W, V> {
-    key: Option<Path<E, W>>,
+    key_part: Option<KeyPart<E, W>>,
     value: Option<V>,
     children: Option<Vec<Node<E, W, V>>>,
 }
@@ -22,13 +22,13 @@ pub struct TrieMapBuilder<E, W, V> {
 
 #[derive(Clone)]
 struct NodeBuilder<E, W, V> {
-    key: Option<Path<E, W>>,
+    key_part: Option<KeyPart<E, W>>,
     value: Option<V>,
     children: Option<BinaryHeap<NodeBuilder<E, W, V>>>,
 }
 
 #[derive(Clone, Eq, PartialEq)]
-pub enum Path<E, W> {
+pub enum KeyPart<E, W> {
     Exact(E),
     Wildcard(W),
 }
@@ -41,21 +41,21 @@ where
     pub fn new() -> Self {
         Self {
             root: NodeBuilder {
-                key: None,
+                key_part: None,
                 value: None,
                 children: None,
             },
         }
     }
 
-    pub fn insert(&mut self, key: impl IntoIterator<Item = Path<E, W>>, value: V) {
+    pub fn insert(&mut self, key: impl IntoIterator<Item = KeyPart<E, W>>, value: V) {
         unsafe {
             let mut node: *mut NodeBuilder<E, W, V> = &mut self.root;
 
-            for part in key {
+            for key_part in key {
                 if (*node).children.is_none() {
                     let mut children = BinaryHeap::new();
-                    children.push(NodeBuilder::new(part));
+                    children.push(NodeBuilder::new(key_part));
                     (*node).children = Some(children);
 
                     let child = (*node).children.as_ref().unwrap().peek().unwrap();
@@ -66,17 +66,17 @@ where
 
                     if let Some(child) = children
                         .iter()
-                        .find(|node| node.key.as_ref() == Some(&part))
+                        .find(|child| child.key_part.as_ref() == Some(&key_part))
                     {
                         let child_const_ptr = child as *const NodeBuilder<E, W, V>;
                         node = child_const_ptr as *mut NodeBuilder<E, W, V>;
                     } else {
-                        let part_cloned = part.clone();
-                        children.push(NodeBuilder::new(part_cloned));
+                        let key_part_cloned = key_part.clone();
+                        children.push(NodeBuilder::new(key_part_cloned));
 
                         let child = children
                             .iter()
-                            .find(|node| node.key.as_ref() == Some(&part))
+                            .find(|child| child.key_part.as_ref() == Some(&key_part))
                             .unwrap();
                         let child_const_ptr = child as *const NodeBuilder<E, W, V>;
                         node = child_const_ptr as *mut NodeBuilder<E, W, V>;
@@ -89,7 +89,7 @@ where
     }
 
     pub fn insert_exact(&mut self, key: impl IntoIterator<Item = E>, value: V) {
-        self.insert(key.into_iter().map(Path::Exact), value);
+        self.insert(key.into_iter().map(KeyPart::Exact), value);
     }
 
     pub fn build(self) -> TrieMap<E, W, V> {
@@ -99,7 +99,7 @@ where
     }
 
     fn node_builder_to_node(node_builder: NodeBuilder<E, W, V>) -> Node<E, W, V> {
-        let key = node_builder.key;
+        let key_part = node_builder.key_part;
         let value = node_builder.value;
 
         let children = node_builder.children.map(|children| {
@@ -111,7 +111,7 @@ where
         });
 
         Node {
-            key,
+            key_part,
             value,
             children,
         }
@@ -123,62 +123,62 @@ where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
-    pub fn get<M: Map<W, E>>(&self, key: &[E], param_map: &mut M) -> Option<&V> {
+    pub fn get<M: CaptureMap<W, E>>(&self, key: &[E], param_map: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
-        let mut last_wildcard: Option<&Node<E, W, V>> = None;
-        let mut current_part_idx = 0;
+        let mut last_wildcard_node: Option<&Node<E, W, V>> = None;
 
-        let mut part_iter = key.iter();
+        let mut key_part_iter = key.iter();
+        let mut key_part_idx = 0;
 
-        while let Some(part) = part_iter.next() {
-            current_part_idx += 1;
+        while let Some(key_part) = key_part_iter.next() {
+            key_part_idx += 1;
 
             let mut try_backtrack = node.children.is_none();
 
             if !try_backtrack {
                 let children = node.children.as_ref().unwrap();
 
-                if children[0].key.as_ref().unwrap().is_wildcard() {
-                    wildcards.push((current_part_idx, &children[0]));
+                if children[0].key_part.as_ref().unwrap().is_wildcard() {
+                    wildcards.push((key_part_idx, &children[0]));
                 }
 
-                if let Ok(idx) = children.binary_search_by(|node| {
-                    let key = node.key.as_ref().unwrap();
-                    key.as_ref().cmp(&Path::Exact(part))
+                if let Ok(child_idx) = children.binary_search_by(|child| {
+                    let child_key_part = child.key_part.as_ref().unwrap();
+                    child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
                 }) {
-                    node = &children[idx];
+                    node = &children[child_idx];
                 } else {
                     try_backtrack = true;
                 }
             }
 
             if try_backtrack {
-                if let Some((idx, wildcard_node)) = wildcards.pop() {
-                    if let Some(last_wildcard) = last_wildcard {
-                        let last_key = last_wildcard
-                            .key
+                if let Some((wildcard_key_part_idx, wildcard_node)) = wildcards.pop() {
+                    if let Some(last_wildcard_node) = last_wildcard_node {
+                        let last_wildcard_key_part = last_wildcard_node
+                            .key_part
                             .as_ref()
                             .unwrap()
                             .as_ref()
                             .unwrap_wildcard();
-                        param_map.remove(last_key);
+                        param_map.remove(last_wildcard_key_part);
                     }
 
-                    let wildcard_key = wildcard_node
-                        .key
+                    let wildcard_key_part = wildcard_node
+                        .key_part
                         .as_ref()
                         .unwrap()
                         .as_ref()
                         .unwrap_wildcard();
-                    let wildcard_value = &key[idx - 1];
-                    param_map.insert(wildcard_key.to_owned(), wildcard_value.to_owned());
+                    let matched_key_part = &key[wildcard_key_part_idx - 1];
+                    param_map.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
 
-                    last_wildcard = Some(wildcard_node);
+                    last_wildcard_node = Some(wildcard_node);
 
-                    current_part_idx = idx;
-                    part_iter = key[idx..].iter();
+                    key_part_idx = wildcard_key_part_idx;
+                    key_part_iter = key[wildcard_key_part_idx..].iter();
                     node = wildcard_node;
                 } else {
                     return None;
@@ -192,16 +192,16 @@ where
     pub fn get_exact(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 
-        for part in key {
+        for key_part in key {
             node.children.as_ref()?;
 
             let children = node.children.as_ref().unwrap();
 
-            if let Ok(idx) = children.binary_search_by(|node| {
-                let key = node.key.as_ref().unwrap();
-                key.as_ref().cmp(&Path::Exact(part))
+            if let Ok(child_idx) = children.binary_search_by(|child| {
+                let child_key_part = child.key_part.as_ref().unwrap();
+                child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
             }) {
-                node = &children[idx];
+                node = &children[child_idx];
             } else {
                 return None;
             }
@@ -211,52 +211,56 @@ where
     }
 }
 
-impl<E, W> Path<E, W> {
-    pub fn as_ref(&self) -> Path<&E, &W> {
+impl<E, W> KeyPart<E, W> {
+    pub fn as_ref(&self) -> KeyPart<&E, &W> {
         match self {
-            Path::Exact(key) => Path::Exact(key),
-            Path::Wildcard(key) => Path::Wildcard(key),
+            KeyPart::Exact(key) => KeyPart::Exact(key),
+            KeyPart::Wildcard(key) => KeyPart::Wildcard(key),
         }
     }
 
     pub fn is_wildcard(&self) -> bool {
-        matches!(self, Path::Wildcard(_))
+        matches!(self, KeyPart::Wildcard(_))
     }
 
     pub fn is_exact(&self) -> bool {
-        matches!(self, Path::Exact(_))
+        matches!(self, KeyPart::Exact(_))
     }
 
     fn unwrap_wildcard(self) -> W {
-        if let Path::Wildcard(key) = self {
+        if let KeyPart::Wildcard(key) = self {
             key
         } else {
-            panic!("Wrong path type");
+            panic!();
         }
     }
 }
 
-impl<E, W> PartialOrd for Path<E, W>
+impl<E, W> PartialOrd for KeyPart<E, W>
 where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
-    fn partial_cmp(&self, other: &Path<E, W>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &KeyPart<E, W>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<E, W> Ord for Path<E, W>
+impl<E, W> Ord for KeyPart<E, W>
 where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (Path::Exact(key), Path::Exact(other_key)) => key.cmp(other_key),
-            (Path::Wildcard(key), Path::Wildcard(other_key)) => key.cmp(other_key),
-            (Path::Exact(_), Path::Wildcard(_)) => Ordering::Greater,
-            (Path::Wildcard(_), Path::Exact(_)) => Ordering::Less,
+            (KeyPart::Exact(key_part), KeyPart::Exact(other_key_part)) => {
+                key_part.cmp(other_key_part)
+            }
+            (KeyPart::Wildcard(key_part), KeyPart::Wildcard(other_key_part)) => {
+                key_part.cmp(other_key_part)
+            }
+            (KeyPart::Exact(_), KeyPart::Wildcard(_)) => Ordering::Greater,
+            (KeyPart::Wildcard(_), KeyPart::Exact(_)) => Ordering::Less,
         }
     }
 }
@@ -267,7 +271,7 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.key == other.key
+        self.key_part == other.key_part
     }
 }
 
@@ -284,7 +288,7 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.key.partial_cmp(&other.key)
+        self.key_part.partial_cmp(&other.key_part)
     }
 }
 
@@ -294,7 +298,7 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.key.cmp(&other.key)
+        self.key_part.cmp(&other.key_part)
     }
 }
 
@@ -313,9 +317,9 @@ where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,
 {
-    fn new(key: Path<E, W>) -> Self {
+    fn new(key_part: KeyPart<E, W>) -> Self {
         Self {
-            key: Some(key),
+            key_part: Some(key_part),
             value: None,
             children: None,
         }
@@ -328,7 +332,7 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.key == other.key
+        self.key_part == other.key_part
     }
 }
 
@@ -345,7 +349,7 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.key.partial_cmp(&other.key)
+        self.key_part.partial_cmp(&other.key_part)
     }
 }
 
@@ -355,16 +359,16 @@ where
     W: Clone + Ord + PartialEq,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.key.cmp(&other.key)
+        self.key_part.cmp(&other.key_part)
     }
 }
 
-pub trait Map<W, E> {
+pub trait CaptureMap<W, E> {
     fn insert(&mut self, key: W, value: E);
     fn remove(&mut self, key: &W);
 }
 
-impl<W, E> Map<W, E> for BTreeMap<W, E>
+impl<W, E> CaptureMap<W, E> for BTreeMap<W, E>
 where
     E: Clone + Ord + PartialEq,
     W: Clone + Ord + PartialEq,

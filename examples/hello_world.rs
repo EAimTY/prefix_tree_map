@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use trie_map::{Path, TrieMapBuilder};
+use trie_map::{KeyPart, TrieMapBuilder};
 
 fn main() {
     let mut trie = TrieMapBuilder::new();
@@ -10,10 +10,10 @@ fn main() {
     trie.insert_exact([4, 2, 3, 1, 9], "world");
     trie.insert(
         [
-            Path::Exact(1),
-            Path::Wildcard(2),
-            Path::Exact(3),
-            Path::Exact(4),
+            KeyPart::Exact(1),
+            KeyPart::Wildcard(2),
+            KeyPart::Exact(3),
+            KeyPart::Exact(4),
         ],
         "again",
     );
