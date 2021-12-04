@@ -138,18 +138,15 @@ where
             if !try_backtrack {
                 let children = node.children.as_ref().unwrap();
 
-                if let Some(wildcard) = children.iter().find(|node| {
-                    let key = node.key.as_ref().unwrap();
-                    key.is_wildcard()
-                }) {
-                    wildcards.push((current_part_idx, wildcard));
+                if children[0].key.as_ref().unwrap().is_wildcard() {
+                    wildcards.push((current_part_idx, &children[0]));
                 }
 
-                if let Some(child) = children.iter().find(|node| {
+                if let Ok(idx) = children.binary_search_by(|node| {
                     let key = node.key.as_ref().unwrap();
-                    key.as_ref() == Path::Exact(part)
+                    key.as_ref().cmp(&Path::Exact(part))
                 }) {
-                    node = child;
+                    node = &children[idx];
                 } else {
                     try_backtrack = true;
                 }
@@ -188,11 +185,11 @@ where
 
             let children = node.children.as_ref().unwrap();
 
-            if let Some(child) = children
-                .iter()
-                .find(|node| node.key.as_ref().map(|key| key.as_ref()) == Some(Path::Exact(part)))
-            {
-                node = child;
+            if let Ok(idx) = children.binary_search_by(|node| {
+                let key = node.key.as_ref().unwrap();
+                key.as_ref().cmp(&Path::Exact(part))
+            }) {
+                node = &children[idx];
             } else {
                 return None;
             }
