@@ -34,9 +34,12 @@ where
             if !try_backtrack {
                 let children = node.children.as_ref().unwrap();
 
-                if children[0].key_part.as_ref().unwrap().is_wildcard() {
-                    wildcards.push((key_part_idx, &children[0]));
-                }
+                children
+                    .iter()
+                    .take_while(|child| child.key_part.as_ref().unwrap().is_wildcard())
+                    .for_each(|child| {
+                        wildcards.push((key_part_idx, child));
+                    });
 
                 if let Ok(child_idx) = children.binary_search_by(|child| {
                     let child_key_part = child.key_part.as_ref().unwrap();
@@ -46,6 +49,10 @@ where
                 } else {
                     try_backtrack = true;
                 }
+            }
+
+            if key_part_idx == key.len() && node.value.is_none() {
+                try_backtrack = true;
             }
 
             if try_backtrack {
@@ -81,9 +88,12 @@ where
             if !try_backtrack {
                 let children = node.children.as_ref().unwrap();
 
-                if children[0].key_part.as_ref().unwrap().is_wildcard() {
-                    wildcards.push((key_part_idx, &children[0]));
-                }
+                children
+                    .iter()
+                    .take_while(|child| child.key_part.as_ref().unwrap().is_wildcard())
+                    .for_each(|child| {
+                        wildcards.push((key_part_idx, child));
+                    });
 
                 if let Ok(child_idx) = children.binary_search_by(|child| {
                     let child_key_part = child.key_part.as_ref().unwrap();
