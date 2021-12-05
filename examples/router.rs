@@ -1,7 +1,7 @@
-use trie_map::{CaptureMap, KeyPart, TrieMap, TrieMapBuilder};
+use prefix_tree_map::{CaptureMap, KeyPart, PrefixTreeMap, PrefixTreeMapBuilder};
 
 struct Router {
-    table: TrieMap<&'static str, Param, Handler>,
+    table: PrefixTreeMap<&'static str, Param, Handler>,
 }
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
@@ -25,7 +25,7 @@ fn product_handler(id: &str) {
 
 impl Router {
     fn new() -> Self {
-        let mut builder = TrieMapBuilder::new();
+        let mut builder = PrefixTreeMapBuilder::new();
 
         let user_url = "/user/:user_id/home";
         let product_url = "/product/:product_id/info";

@@ -1,9 +1,9 @@
 use crate::{capture_map::CaptureMap, key_part::KeyPart};
 use std::fmt::Debug;
 
-/// The trie map.
+/// The prefix tree map.
 #[derive(Clone)]
-pub struct TrieMap<E, W, V> {
+pub struct PrefixTreeMap<E, W, V> {
     pub(crate) root: Node<E, W, V>,
 }
 
@@ -14,7 +14,7 @@ pub(crate) struct Node<E, W, V> {
     pub(crate) children: Option<Vec<Node<E, W, V>>>,
 }
 
-impl<E, W, V> TrieMap<E, W, V>
+impl<E, W, V> PrefixTreeMap<E, W, V>
 where
     E: Clone + Ord,
     W: Clone + Ord,
@@ -178,9 +178,9 @@ where
     }
 }
 
-impl<E: Debug, W: Debug, V: Debug> Debug for TrieMap<E, W, V> {
+impl<E: Debug, W: Debug, V: Debug> Debug for PrefixTreeMap<E, W, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "TrieMap {{ root: {:?} }}", self.root)
+        write!(f, "PrefixTreeMap {{ root: {:?} }}", self.root)
     }
 }
 

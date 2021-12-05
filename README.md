@@ -1,10 +1,14 @@
-# trie_map
-A Rust implementation of generic trie map with wildcard capture support.
+# prefix_tree_map
+A Rust implementation of generic prefix tree (trie) map with wildcard capture support.
+
+[![Version](https://img.shields.io/crates/v/prefix_tree_map.svg?style=flat)](https://crates.io/crates/prefix_tree_map)
+[![Documentation](https://img.shields.io/badge/docs-release-brightgreen.svg?style=flat)](https://docs.rs/prefix_tree_map)
+[![License](https://img.shields.io/crates/l/prefix_tree_map.svg?style=flat)](https://github.com/EAimTY/prefix_tree_map/blob/master/LICENSE)
 
 ## Design
 [Trie](https://en.wikipedia.org/wiki/Trie) is a good data structure for storing key-value pairs with wildcard support ability.
 
-This trie map implementation supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait. Internally, nodes are stored in a sorted `Vec`. So technically it can achieve `O(log n)` time complexity on finding every node by using binary search on the sorted `Vec`.
+This prefix tree map implementation supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait. Internally, nodes are stored in a sorted `Vec`. So technically it can achieve `O(log n)` time complexity on finding every node by using binary search on the sorted `Vec`.
 
 Using as a route-table-like structure could be the best scenario for this crate.
 
@@ -15,7 +19,7 @@ Using as a route-table-like structure could be the best scenario for this crate.
 - **Wildcard Capture Support** - Capture wildcard characters in a map while matching.
 - **Generalization** - Supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait.
 - **Capture Map Customization** - Customize the way key parts captured by wildcard stored.
-- **No recursion in find operations** - Rather than store the whole context of every node searching, this trie map only store those tiny wildcard node pointers for backtracking on heap.
+- **No recursion in find operations** - Rather than store the whole context of every node searching, this prefix tree map only store those tiny wildcard node pointers for backtracking on heap.
 
 ### Cons
 - The map itself is immutable, because the map builder is using Binary Heap to sort the nodes when they are inserted. We can't get a item from a Binary Heap without iterating the whole Binary Heap. Once the `build()` is called, Binary Heaps are converted into sorted `Vec`s. We can't push any item to the `Vec` without a whole sort operation.
@@ -23,9 +27,9 @@ Using as a route-table-like structure could be the best scenario for this crate.
 
 ## Usage
 ```rust
-use trie_map::TrieMapBuilder;
+use prefix_tree_map::PrefixTreeMapBuilder;
 
-let mut map_builder = TrieMapBuilder::new();
+let mut map_builder = PrefixTreeMapBuilder::new();
 
 // To insert an exact key path, call `insert_exact()`
 map_builder.insert_exact(["path", "to", "value"], "value0");
@@ -33,8 +37,8 @@ map_builder.insert_exact(["path", "to", "value"], "value0");
 // Insert into a existed key path could overwrite the value in it
 map_builder.insert_exact(["path", "to", "value"], "value1");
 
-// To insert an key path with wildcards, mark key parts using `trie_map::KeyPart` and call `insert()`
-use trie_map::KeyPart;
+// To insert an key path with wildcards, mark key parts using `prefix_tree_map::KeyPart` and call `insert()`
+use prefix_tree_map::KeyPart;
 
 map_builder.insert(
     [
@@ -100,7 +104,7 @@ impl Map {
     }
 }
 
-use trie_map::CaptureMap;
+use prefix_tree_map::CaptureMap;
 
 impl CaptureMap<&str, &str> for Map {
     fn insert(&mut self, key: &str, value: &str) {
@@ -125,9 +129,9 @@ impl CaptureMap<&str, &str> for Map {
 }
 
 fn capture() {
-    use trie_map::{KeyPart, TrieMapBuilder};
+    use prefix_tree_map::{KeyPart, PrefixTreeMapBuilder};
 
-    let mut builder = TrieMapBuilder::new();
+    let mut builder = PrefixTreeMapBuilder::new();
 
     builder.insert(
         [
@@ -159,11 +163,11 @@ fn capture() {
 }
 ```
 
-For more infomation, check out [examples/router.rs](https://github.com/EAimTY/trie_map/blob/master/examples/router.rs)
+For more infomation, check out [examples/router.rs](https://github.com/EAimTY/prefix_tree_map/blob/master/examples/router.rs)
 
 ## Examples
 
-Check [examples](https://github.com/EAimTY/trie_map/tree/master/examples).
+Check [examples](https://github.com/EAimTY/prefix_tree_map/tree/master/examples).
 
 ## License
 GNU General Public License v3.0

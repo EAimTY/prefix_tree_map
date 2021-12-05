@@ -1,12 +1,12 @@
 use crate::{
     key_part::KeyPart,
-    trie_map::{Node, TrieMap},
+    prefix_tree_map::{Node, PrefixTreeMap},
 };
 use std::collections::BinaryHeap;
 
-/// The trie map builder.
+/// The prefix tree map builder.
 #[derive(Clone)]
-pub struct TrieMapBuilder<E, W, V> {
+pub struct PrefixTreeMapBuilder<E, W, V> {
     root: NodeBuilder<E, W, V>,
 }
 
@@ -17,12 +17,12 @@ struct NodeBuilder<E, W, V> {
     children: Option<BinaryHeap<NodeBuilder<E, W, V>>>,
 }
 
-impl<E, W, V> TrieMapBuilder<E, W, V>
+impl<E, W, V> PrefixTreeMapBuilder<E, W, V>
 where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    /// Create a new `TrieMapBuilder`.
+    /// Create a new `PrefixTreeMapBuilder`.
     pub fn new() -> Self {
         Self {
             root: NodeBuilder {
@@ -33,7 +33,7 @@ where
         }
     }
 
-    /// Insert a new value into the trie map.
+    /// Insert a new value into the prefix tree map.
     ///
     /// Key parts need to be marked by [`KeyPart`](enum.KeyPart.html).
     ///
@@ -83,9 +83,9 @@ where
         self.insert(key.into_iter().map(KeyPart::Exact), value);
     }
 
-    /// Build the trie map.
-    pub fn build(self) -> TrieMap<E, W, V> {
-        TrieMap {
+    /// Build the prefix tree map.
+    pub fn build(self) -> PrefixTreeMap<E, W, V> {
+        PrefixTreeMap {
             root: Self::node_builder_to_node(self.root),
         }
     }
@@ -110,7 +110,7 @@ where
     }
 }
 
-impl<E, W, V> Default for TrieMapBuilder<E, W, V>
+impl<E, W, V> Default for PrefixTreeMapBuilder<E, W, V>
 where
     E: Clone + Ord,
     W: Clone + Ord,

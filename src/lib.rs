@@ -3,8 +3,9 @@
 mod builder;
 mod capture_map;
 mod key_part;
-mod trie_map;
+mod prefix_tree_map;
 
 pub use self::{
-    builder::TrieMapBuilder, capture_map::CaptureMap, key_part::KeyPart, trie_map::TrieMap,
+    builder::PrefixTreeMapBuilder, capture_map::CaptureMap, key_part::KeyPart,
+    prefix_tree_map::PrefixTreeMap,
 };

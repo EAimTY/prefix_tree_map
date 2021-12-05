@@ -1,6 +1,13 @@
 [package]
-name = "trie_map"
+name = "prefix_tree_map"
+description = "A Rust implementation of generic prefix tree (trie) map with wildcard capture support"
+categories = ["data-structures"]
+keywords = ["trie", "prefix", "tree", "map", "collection"]
 version = "0.1.0"
+authors = ["EAimTY <ea.imty@gmail.com>"]
 edition = "2021"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/EAimTY/prefix_tree_map"
 
 [dependencies]
