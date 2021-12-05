@@ -4,7 +4,7 @@ A Rust implementation of generic trie map with wildcard capture support.
 ## Design
 [Trie](https://en.wikipedia.org/wiki/Trie) is a good data structure for storing key-value pairs with wildcard support ability.
 
-This trie map implementation supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait. Internally, nodes are stored in a sorted `Vec`. So technically it can achieve `O(log n)` time complexity on finding next node by using binary search on the sorted `Vec`.
+This trie map implementation supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait. Internally, nodes are stored in a sorted `Vec`. So technically it can achieve `O(log n)` time complexity on finding every node by using binary search on the sorted `Vec`.
 
 Using as a route-table-like structure could be the best scenario for this crate.
 
@@ -117,6 +117,10 @@ impl CaptureMap<&str, &str> for Map {
             &":product_id" => self.data[1] = None,
             _ => (),
         }
+    }
+
+    fn clear(&mut self) {
+        self.captures = [None, None];
     }
 }
 

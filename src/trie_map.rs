@@ -71,6 +71,8 @@ where
         let mut key_part_iter = key.iter();
         let mut key_part_idx = 0;
 
+        captures.clear();
+
         while let Some(key_part) = key_part_iter.next() {
             key_part_idx += 1;
 
@@ -123,6 +125,10 @@ where
                     return None;
                 }
             }
+        }
+
+        if node.value.is_none() {
+            captures.clear();
         }
 
         node.value.as_ref()

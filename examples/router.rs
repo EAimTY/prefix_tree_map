@@ -96,6 +96,10 @@ impl CaptureMap<Param, &str> for Map {
             Param::ProductId => self.captures[1] = None,
         }
     }
+
+    fn clear(&mut self) {
+        self.captures = [None, None];
+    }
 }
 
 fn main() {
