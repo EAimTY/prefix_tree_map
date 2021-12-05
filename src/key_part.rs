@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Debug};
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum KeyPart<E, W> {
@@ -27,6 +27,15 @@ impl<E, W> KeyPart<E, W> {
             key
         } else {
             panic!();
+        }
+    }
+}
+
+impl<E: Debug, W: Debug> Debug for KeyPart<E, W> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeyPart::Exact(key) => write!(f, "Exact({:?})", key),
+            KeyPart::Wildcard(key) => write!(f, "Wildcard({:?})", key),
         }
     }
 }
