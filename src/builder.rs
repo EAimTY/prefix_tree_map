@@ -4,6 +4,7 @@ use crate::{
 };
 use std::collections::BinaryHeap;
 
+/// The trie map builder.
 #[derive(Clone)]
 pub struct TrieMapBuilder<E, W, V> {
     root: NodeBuilder<E, W, V>,
@@ -21,6 +22,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
+    /// Create a new `TrieMapBuilder`.
     pub fn new() -> Self {
         Self {
             root: NodeBuilder {
@@ -31,6 +33,11 @@ where
         }
     }
 
+    /// Insert a new value into the trie map.
+    ///
+    /// Key parts need to be marked by [`KeyPart`](enum.KeyPart.html).
+    ///
+    /// Insert into a existed key path could overwrite the value in it.
     pub fn insert(&mut self, key: impl IntoIterator<Item = KeyPart<E, W>>, value: V) {
         unsafe {
             let mut node: *mut NodeBuilder<E, W, V> = &mut self.root;
@@ -71,10 +78,12 @@ where
         }
     }
 
+    /// Insert a new value in an exact key path.
     pub fn insert_exact(&mut self, key: impl IntoIterator<Item = E>, value: V) {
         self.insert(key.into_iter().map(KeyPart::Exact), value);
     }
 
+    /// Build the trie map.
     pub fn build(self) -> TrieMap<E, W, V> {
         TrieMap {
             root: Self::node_builder_to_node(self.root),

@@ -3,6 +3,7 @@ use std::{
     hash::Hash,
 };
 
+/// The trait for customizing the capture map.
 pub trait CaptureMap<W, E> {
     fn insert(&mut self, key: W, value: E);
     fn remove(&mut self, key: &W);

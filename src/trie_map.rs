@@ -1,6 +1,7 @@
 use crate::{capture_map::CaptureMap, key_part::KeyPart};
 use std::fmt::Debug;
 
+/// The trie map.
 #[derive(Clone)]
 pub struct TrieMap<E, W, V> {
     pub(crate) root: Node<E, W, V>,
@@ -18,6 +19,9 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
+    /// Find a value with matching wildcard part.
+    ///
+    /// Return the smallest value that matches the given key.
     pub fn find(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 
@@ -69,6 +73,9 @@ where
         node.value.as_ref()
     }
 
+    /// Find a value with matching wildcard part, and store captured matched wildcard parts in a map.
+    ///
+    /// Return the smallest value that matches the given key.
     pub fn find_and_capture<M: CaptureMap<W, E>>(&self, key: &[E], captures: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
@@ -148,6 +155,7 @@ where
         node.value.as_ref()
     }
 
+    /// Find a value without matching wildcard part.
     pub fn find_exact(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 

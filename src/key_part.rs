@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, fmt::Debug};
 
+/// A part of a key.
 #[derive(Clone, Eq, PartialEq)]
 pub enum KeyPart<E, W> {
     Exact(E),
@@ -7,6 +8,7 @@ pub enum KeyPart<E, W> {
 }
 
 impl<E, W> KeyPart<E, W> {
+    /// Convert from `&KeyPart<E, W>` to `KeyPart<&E, &W>`.
     pub fn as_ref(&self) -> KeyPart<&E, &W> {
         match self {
             KeyPart::Exact(key) => KeyPart::Exact(key),
@@ -14,10 +16,12 @@ impl<E, W> KeyPart<E, W> {
         }
     }
 
+    /// Return true if the key part is a wildcard.
     pub fn is_wildcard(&self) -> bool {
         matches!(self, KeyPart::Wildcard(_))
     }
 
+    /// Return true if the key part is a exact key.
     pub fn is_exact(&self) -> bool {
         matches!(self, KeyPart::Exact(_))
     }
