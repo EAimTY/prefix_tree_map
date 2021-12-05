@@ -95,6 +95,10 @@ where
                 }
             }
 
+            if key_part_idx == key.len() && node.value.is_none() {
+                try_backtrack = true;
+            }
+
             if try_backtrack {
                 if let Some((wildcard_key_part_idx, wildcard_node)) = wildcards.pop() {
                     if let Some(last_wildcard_node) = last_wildcard_node {

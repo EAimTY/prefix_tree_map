@@ -120,7 +120,7 @@ impl CaptureMap<&str, &str> for Map {
     }
 
     fn clear(&mut self) {
-        self.captures = [None, None];
+        self.data = [None, None];
     }
 }
 
