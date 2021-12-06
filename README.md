@@ -114,18 +114,6 @@ impl CaptureMap<&str, &str> for Map {
             _ => (),
         }
     }
-
-    fn remove(&mut self, key: &&str) {
-        match key {
-            &":user_id" => self.data[0] = None,
-            &":product_id" => self.data[1] = None,
-            _ => (),
-        }
-    }
-
-    fn clear(&mut self) {
-        self.data = [None, None];
-    }
 }
 
 fn capture() {
