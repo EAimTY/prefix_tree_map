@@ -104,9 +104,9 @@ impl Map {
     }
 }
 
-use prefix_tree_map::CaptureMap;
+use prefix_tree_map::Captures;
 
-impl CaptureMap<&str, &str> for Map {
+impl Captures<&str, &str> for Map {
     fn insert(&mut self, key: &str, value: &str) {
         match key {
             ":user_id" => self.data[0] = Some(value.to_string()),

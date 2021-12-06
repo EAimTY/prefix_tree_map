@@ -1,4 +1,4 @@
-use prefix_tree_map::{CaptureMap, KeyPart, PrefixTreeMap, PrefixTreeMapBuilder};
+use prefix_tree_map::{Captures, KeyPart, PrefixTreeMap, PrefixTreeMapBuilder};
 
 struct Router {
     table: PrefixTreeMap<&'static str, Param, Handler>,
@@ -82,7 +82,7 @@ impl Map {
     }
 }
 
-impl CaptureMap<Param, &str> for Map {
+impl Captures<Param, &str> for Map {
     fn insert(&mut self, key: Param, value: &str) {
         match key {
             Param::UserId => self.captures[0] = Some(value.to_string()),

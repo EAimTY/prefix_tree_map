@@ -4,11 +4,11 @@ use std::{
 };
 
 /// The trait for customizing the capture map.
-pub trait CaptureMap<W, E> {
+pub trait Captures<W, E> {
     fn insert(&mut self, key: W, value: E);
 }
 
-impl<W, E> CaptureMap<W, E> for BTreeMap<W, E>
+impl<W, E> Captures<W, E> for BTreeMap<W, E>
 where
     E: Clone + Ord,
     W: Clone + Ord,
@@ -18,7 +18,7 @@ where
     }
 }
 
-impl<W, E> CaptureMap<W, E> for HashMap<W, E>
+impl<W, E> Captures<W, E> for HashMap<W, E>
 where
     E: Clone + Ord,
     W: Clone + Hash + Ord,

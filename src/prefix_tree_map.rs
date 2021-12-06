@@ -1,4 +1,4 @@
-use crate::{capture_map::CaptureMap, key_part::KeyPart};
+use crate::{captures::Captures, key_part::KeyPart};
 use std::fmt::Debug;
 
 /// The prefix tree map.
@@ -76,7 +76,7 @@ where
     /// Find a value with matching wildcard part, and store captured matched wildcard parts in a map.
     ///
     /// Return the smallest value that matches the given key.
-    pub fn find_and_capture<M: CaptureMap<W, E>>(&self, key: &[E], captures: &mut M) -> Option<&V> {
+    pub fn find_and_capture<M: Captures<W, E>>(&self, key: &[E], captures: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
