@@ -80,12 +80,10 @@ where
         let mut node = &self.root;
 
         let mut wildcards = Vec::new();
-        let mut last_wildcard_node: Option<&Node<E, W, V>> = None;
+        let mut captured = Vec::new();
 
         let mut key_part_iter = key.iter();
         let mut key_part_idx = 0;
-
-        captures.clear();
 
         while let Some(key_part) = key_part_iter.next() {
             key_part_idx += 1;
@@ -118,26 +116,20 @@ where
 
             if try_backtrack {
                 if let Some((wildcard_key_part_idx, wildcard_node)) = wildcards.pop() {
-                    if let Some(last_wildcard_node) = last_wildcard_node {
-                        let last_wildcard_key_part = last_wildcard_node
-                            .key_part
-                            .as_ref()
-                            .unwrap()
-                            .as_ref()
-                            .unwrap_wildcard();
-                        captures.remove(last_wildcard_key_part);
-                    }
+                    let discard_count = captured
+                        .iter()
+                        .rev()
+                        .filter(|(captured_key_part_idx, _, _)| {
+                            captured_key_part_idx >= &wildcard_key_part_idx
+                        })
+                        .count();
 
-                    let wildcard_key_part = wildcard_node
-                        .key_part
-                        .as_ref()
-                        .unwrap()
-                        .as_ref()
-                        .unwrap_wildcard();
-                    let matched_key_part = &key[wildcard_key_part_idx - 1];
-                    captures.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
-
-                    last_wildcard_node = Some(wildcard_node);
+                    captured.truncate(captured.len() - discard_count);
+                    captured.push((
+                        wildcard_key_part_idx,
+                        wildcard_node,
+                        &key[wildcard_key_part_idx - 1],
+                    ));
 
                     key_part_idx = wildcard_key_part_idx;
                     key_part_iter = key[wildcard_key_part_idx..].iter();
@@ -148,8 +140,9 @@ where
             }
         }
 
-        if node.value.is_none() {
-            captures.clear();
+        for (_, node, matched_key_part) in captured.into_iter() {
+            let wildcard_key_part = node.key_part.as_ref().unwrap().as_ref().unwrap_wildcard();
+            captures.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
         }
 
         node.value.as_ref()
