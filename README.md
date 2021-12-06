@@ -153,6 +153,9 @@ fn capture() {
 
 For more infomation, check out [examples/router.rs](https://github.com/EAimTY/prefix_tree_map/blob/master/examples/router.rs)
 
+## `no_std`
+Opt out the `std` feature by disabling `default-features` in `Cargo.toml` to remove the Rust standard library dependency.
+
 ## Examples
 
 Check [examples](https://github.com/EAimTY/prefix_tree_map/tree/master/examples).
