@@ -1,7 +1,7 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-};
+use crate::std_lib::BTreeMap;
+
+#[cfg(feature = "std")]
+use std::{collections::HashMap, hash::Hash};
 
 /// The trait for customizing the capture map.
 pub trait Captures<W, E> {
@@ -18,6 +18,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<W, E> Captures<W, E> for HashMap<W, E>
 where
     E: Clone + Ord,

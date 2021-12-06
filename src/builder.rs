@@ -1,8 +1,8 @@
 use crate::{
     key_part::KeyPart,
     prefix_tree_map::{Node, PrefixTreeMap},
+    std_lib::{BinaryHeap, Ordering},
 };
-use std::collections::BinaryHeap;
 
 /// The prefix tree map builder.
 #[derive(Clone)]
@@ -156,7 +156,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.key_part.partial_cmp(&other.key_part)
     }
 }
@@ -166,7 +166,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.key_part.cmp(&other.key_part)
     }
 }

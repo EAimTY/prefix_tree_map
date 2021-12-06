@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Debug};
+use crate::std_lib::{Debug, FmtResult, Formatter, Ordering};
 
 /// A part of a key.
 #[derive(Clone, Eq, PartialEq)]
@@ -36,7 +36,7 @@ impl<E, W> KeyPart<E, W> {
 }
 
 impl<E: Debug, W: Debug> Debug for KeyPart<E, W> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             KeyPart::Exact(key) => write!(f, "Exact({:?})", key),
             KeyPart::Wildcard(key) => write!(f, "Wildcard({:?})", key),

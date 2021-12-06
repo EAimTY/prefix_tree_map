@@ -1,5 +1,8 @@
-use crate::{captures::Captures, key_part::KeyPart};
-use std::fmt::Debug;
+use crate::{
+    captures::Captures,
+    key_part::KeyPart,
+    std_lib::{Debug, FmtResult, Formatter, Ordering, Vec},
+};
 
 /// The prefix tree map.
 #[derive(Clone)]
@@ -142,7 +145,7 @@ where
 
         for (_, node, matched_key_part) in captured.into_iter() {
             let wildcard_key_part = node.key_part.as_ref().unwrap().as_ref().unwrap_wildcard();
-            captures.insert(wildcard_key_part.to_owned(), matched_key_part.to_owned());
+            captures.insert(wildcard_key_part.clone(), matched_key_part.clone());
         }
 
         node.value.as_ref()
@@ -172,13 +175,13 @@ where
 }
 
 impl<E: Debug, W: Debug, V: Debug> Debug for PrefixTreeMap<E, W, V> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "PrefixTreeMap {{ root: {:?} }}", self.root)
     }
 }
 
 impl<E: Debug, W: Debug, V: Debug> Debug for Node<E, W, V> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(
             f,
             "Node {{ key_part: {:?}, value: {:?}, children: {:?} }}",
@@ -209,7 +212,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.key_part.partial_cmp(&other.key_part)
     }
 }
@@ -219,7 +222,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.key_part.cmp(&other.key_part)
     }
 }
