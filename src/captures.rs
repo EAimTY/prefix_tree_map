@@ -3,7 +3,7 @@ use crate::std_lib::BTreeMap;
 #[cfg(feature = "std")]
 use std::{collections::HashMap, hash::Hash};
 
-/// The trait for customizing the capture map.
+/// The trait for customizing the capture map
 pub trait Captures<W, E> {
     fn insert(&mut self, key: W, value: E);
 }

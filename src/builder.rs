@@ -8,6 +8,7 @@ use crate::{
 #[derive(Clone)]
 pub struct PrefixTreeMapBuilder<E, W, V> {
     root: NodeBuilder<E, W, V>,
+    max_wildcard_depth: usize,
 }
 
 #[derive(Clone)]
@@ -30,6 +31,7 @@ where
                 value: None,
                 children: None,
             },
+            max_wildcard_depth: 0,
         }
     }
 
@@ -40,8 +42,13 @@ where
     /// Insert into a existed key path could overwrite the value in it
     pub fn insert(&mut self, key: impl IntoIterator<Item = KeyPart<E, W>>, value: V) {
         let mut node = &mut self.root as *mut NodeBuilder<E, W, V>;
+        let mut wildcard_depth = 0;
 
         for key_part in key {
+            if key_part.is_wildcard() {
+                wildcard_depth += 1;
+            }
+
             if unsafe { (*node).children.is_none() } {
                 let mut children = BinaryHeap::new();
                 children.push(NodeBuilder::new(key_part));
@@ -90,6 +97,8 @@ where
         unsafe {
             (*node).value = Some(value);
         }
+
+        self.max_wildcard_depth = self.max_wildcard_depth.max(wildcard_depth);
     }
 
     /// Insert a new value in an exact key path
@@ -101,6 +110,7 @@ where
     pub fn build(self) -> PrefixTreeMap<E, W, V> {
         PrefixTreeMap {
             root: Self::node_builder_to_node(self.root),
+            max_wildcard_depth: self.max_wildcard_depth,
         }
     }
 

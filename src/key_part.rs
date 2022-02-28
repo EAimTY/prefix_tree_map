@@ -1,6 +1,6 @@
 use crate::std_lib::{Debug, FmtResult, Formatter, Ordering};
 
-/// A part of a key.
+/// A part of a key
 #[derive(Clone, Eq, PartialEq)]
 pub enum KeyPart<E, W> {
     Exact(E),
@@ -8,7 +8,7 @@ pub enum KeyPart<E, W> {
 }
 
 impl<E, W> KeyPart<E, W> {
-    /// Convert from `&KeyPart<E, W>` to `KeyPart<&E, &W>`.
+    /// Convert a `&KeyPart<E, W>` to a `KeyPart<&E, &W>`
     pub fn as_ref(&self) -> KeyPart<&E, &W> {
         match self {
             KeyPart::Exact(key) => KeyPart::Exact(key),
@@ -16,21 +16,20 @@ impl<E, W> KeyPart<E, W> {
         }
     }
 
-    /// Return true if the key part is a wildcard.
+    /// Is the key part a `KeyPart::Wildcard`
     pub fn is_wildcard(&self) -> bool {
         matches!(self, KeyPart::Wildcard(_))
     }
 
-    /// Return true if the key part is a exact key.
+    /// Is the key part an `KeyPart::Exact`
     pub fn is_exact(&self) -> bool {
         matches!(self, KeyPart::Exact(_))
     }
 
     pub(crate) fn unwrap_wildcard(self) -> W {
-        if let KeyPart::Wildcard(key) = self {
-            key
-        } else {
-            panic!();
+        match self {
+            KeyPart::Wildcard(key) => key,
+            KeyPart::Exact(_) => unreachable!(),
         }
     }
 }

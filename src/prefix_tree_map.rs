@@ -4,10 +4,11 @@ use crate::{
     std_lib::{Debug, FmtResult, Formatter, Ordering, Vec},
 };
 
-/// The prefix tree map.
+/// The prefix tree map
 #[derive(Clone)]
 pub struct PrefixTreeMap<E, W, V> {
     pub(crate) root: Node<E, W, V>,
+    pub(crate) max_wildcard_depth: usize,
 }
 
 #[derive(Clone)]
@@ -22,13 +23,13 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    /// Find a value with matching wildcard part.
+    /// Find a value with matching wildcard part
     ///
-    /// Return the smallest value that matches the given key.
+    /// Return the smallest value that matches the given key
     pub fn find(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 
-        let mut wildcards = Vec::new();
+        let mut wildcards = Vec::with_capacity(self.max_wildcard_depth);
 
         let mut key_part_iter = key.iter();
         let mut key_part_idx = 0;
@@ -39,17 +40,19 @@ where
             let mut try_backtrack = node.children.is_none();
 
             if !try_backtrack {
-                let children = node.children.as_ref().unwrap();
+                let children = unsafe { node.children.as_ref().unwrap_unchecked() };
 
                 children
                     .iter()
-                    .take_while(|child| child.key_part.as_ref().unwrap().is_wildcard())
+                    .take_while(|child| unsafe {
+                        child.key_part.as_ref().unwrap_unchecked().is_wildcard()
+                    })
                     .for_each(|child| {
                         wildcards.push((key_part_idx, child));
                     });
 
                 if let Ok(child_idx) = children.binary_search_by(|child| {
-                    let child_key_part = child.key_part.as_ref().unwrap();
+                    let child_key_part = unsafe { child.key_part.as_ref().unwrap_unchecked() };
                     child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
                 }) {
                     node = &children[child_idx];
@@ -76,14 +79,14 @@ where
         node.value.as_ref()
     }
 
-    /// Find a value with matching wildcard part, and store captured matched wildcard parts in a map.
+    /// Find a value with matching wildcard part, and store captured matched wildcard parts in a map
     ///
-    /// Return the smallest value that matches the given key.
+    /// Return the smallest value that matches the given key
     pub fn find_and_capture<M: Captures<W, E>>(&self, key: &[E], captures: &mut M) -> Option<&V> {
         let mut node = &self.root;
 
-        let mut wildcards = Vec::new();
-        let mut captured = Vec::new();
+        let mut wildcards = Vec::with_capacity(self.max_wildcard_depth);
+        let mut captured = Vec::with_capacity(self.max_wildcard_depth);
 
         let mut key_part_iter = key.iter();
         let mut key_part_idx = 0;
@@ -94,17 +97,19 @@ where
             let mut try_backtrack = node.children.is_none();
 
             if !try_backtrack {
-                let children = node.children.as_ref().unwrap();
+                let children = unsafe { node.children.as_ref().unwrap_unchecked() };
 
                 children
                     .iter()
-                    .take_while(|child| child.key_part.as_ref().unwrap().is_wildcard())
+                    .take_while(|child| unsafe {
+                        child.key_part.as_ref().unwrap_unchecked().is_wildcard()
+                    })
                     .for_each(|child| {
                         wildcards.push((key_part_idx, child));
                     });
 
                 if let Ok(child_idx) = children.binary_search_by(|child| {
-                    let child_key_part = child.key_part.as_ref().unwrap();
+                    let child_key_part = unsafe { child.key_part.as_ref().unwrap_unchecked() };
                     child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
                 }) {
                     node = &children[child_idx];
@@ -144,24 +149,30 @@ where
         }
 
         for (_, node, matched_key_part) in captured.into_iter() {
-            let wildcard_key_part = node.key_part.as_ref().unwrap().as_ref().unwrap_wildcard();
+            let wildcard_key_part = unsafe {
+                node.key_part
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .as_ref()
+                    .unwrap_wildcard()
+            };
             captures.insert(wildcard_key_part.clone(), matched_key_part.clone());
         }
 
         node.value.as_ref()
     }
 
-    /// Find a value without matching wildcard part.
+    /// Find a value without matching wildcard part
     pub fn find_exact(&self, key: &[E]) -> Option<&V> {
         let mut node = &self.root;
 
         for key_part in key {
             node.children.as_ref()?;
 
-            let children = node.children.as_ref().unwrap();
+            let children = unsafe { node.children.as_ref().unwrap_unchecked() };
 
             if let Ok(child_idx) = children.binary_search_by(|child| {
-                let child_key_part = child.key_part.as_ref().unwrap();
+                let child_key_part = unsafe { child.key_part.as_ref().unwrap_unchecked() };
                 child_key_part.as_ref().cmp(&KeyPart::Exact(key_part))
             }) {
                 node = &children[child_idx];
