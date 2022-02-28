@@ -5,27 +5,21 @@ A Rust implementation of generic prefix tree (trie) map with wildcard capture su
 [![Documentation](https://img.shields.io/badge/docs-release-brightgreen.svg?style=flat)](https://docs.rs/prefix_tree_map)
 [![License](https://img.shields.io/crates/l/prefix_tree_map.svg?style=flat)](https://github.com/EAimTY/prefix_tree_map/blob/master/LICENSE)
 
-## Design
-[Trie](https://en.wikipedia.org/wiki/Trie) is a good data structure for storing key-value pairs with wildcard support ability.
-
-This prefix tree map implementation supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait. Internally, nodes are stored in a sorted `Vec`. So technically it can achieve `O(log n)` time complexity on finding every node by using binary search on the sorted `Vec`.
-
-Using as a route-table-like structure could be the best scenario for this crate.
-
 ## Pros and Cons
 
 ### Pros
 - **Fast and efficient**
 - **Wildcard Capture Support** - Capture wildcard characters in a map while matching.
-- **Generalization** - Supports any type of key and value, as long as key parts are implemented the `Ord` and `Clone` trait.
+- **Generalization** - Supports any type of key and value, as long as key parts are implemented the `Ord` and the `Clone` trait.
 - **Capture Map Customization** - Customize the way key parts captured by wildcard stored.
-- **No recursion in find operations** - Rather than store the whole context of every node searching, this prefix tree map only store those tiny wildcard node pointers for backtracking on heap.
+- **No recursion in find operations** - Since the key could be huge data structure, to avoid stack overflow, this prefix tree map only store those tiny wildcard node pointers for backtracking, rather than store the whole context of every node searching
 
 ### Cons
-- The map itself is immutable, because the map builder is using Binary Heap to sort the nodes when they are inserted. We can't get a item from a Binary Heap without iterating the whole Binary Heap. Once the `build()` is called, Binary Heaps are converted into sorted `Vec`s. We can't push any item to the `Vec` without a whole sort operation.
-- Currently, a single wildcard cannot be matched more than one time. It means `word` can be matched by `w**d`, not `w*d`.
+- The map itself is immutable, because the map builder is using Binary Heap to sort the nodes when they are inserted. We can't get a item from a Binary Heap without whole iteration on it. Once the `build()` is called, Binary Heaps are converted into sorted `Vec`s. We can't push any item to the `Vec` without a sort.
+- A single wildcard cannot be matched more than one time. It means `word` can only be matched by `w**d`, not `w*d`.
 
 ## Usage
+
 ```rust
 use prefix_tree_map::PrefixTreeMapBuilder;
 
@@ -93,6 +87,7 @@ assert_eq!(Some(&"a"), captures.get(&":some"));
 ```
 
 Customizing Capture map:
+
 ```rust
 struct Map {
     pub data: [Option<String>; 2],
