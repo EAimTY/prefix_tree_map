@@ -4,7 +4,7 @@ use crate::{
     std_lib::{BinaryHeap, Ordering},
 };
 
-/// The prefix tree map builder.
+/// The prefix tree map builder
 #[derive(Clone)]
 pub struct PrefixTreeMapBuilder<E, W, V> {
     root: NodeBuilder<E, W, V>,
@@ -22,7 +22,7 @@ where
     E: Clone + Ord,
     W: Clone + Ord,
 {
-    /// Create a new `PrefixTreeMapBuilder`.
+    /// Create a new `PrefixTreeMapBuilder`
     pub fn new() -> Self {
         Self {
             root: NodeBuilder {
@@ -33,57 +33,71 @@ where
         }
     }
 
-    /// Insert a new value into the prefix tree map.
+    /// Insert a new value into the prefix tree map
     ///
-    /// Key parts need to be marked by [`KeyPart`](enum.KeyPart.html).
+    /// Key parts need to be marked by [`KeyPart`](enum.KeyPart.html)
     ///
-    /// Insert into a existed key path could overwrite the value in it.
+    /// Insert into a existed key path could overwrite the value in it
     pub fn insert(&mut self, key: impl IntoIterator<Item = KeyPart<E, W>>, value: V) {
-        unsafe {
-            let mut node: *mut NodeBuilder<E, W, V> = &mut self.root;
+        let mut node = &mut self.root as *mut NodeBuilder<E, W, V>;
 
-            for key_part in key {
-                if (*node).children.is_none() {
-                    let mut children = BinaryHeap::new();
-                    children.push(NodeBuilder::new(key_part));
+        for key_part in key {
+            if unsafe { (*node).children.is_none() } {
+                let mut children = BinaryHeap::new();
+                children.push(NodeBuilder::new(key_part));
+
+                unsafe {
                     (*node).children = Some(children);
+                }
 
-                    let child = (*node).children.as_ref().unwrap().peek().unwrap();
+                let child = unsafe {
+                    (*node)
+                        .children
+                        .as_ref()
+                        .unwrap_unchecked()
+                        .peek()
+                        .unwrap_unchecked()
+                };
+
+                let child_const_ptr = child as *const NodeBuilder<E, W, V>;
+                node = child_const_ptr as *mut NodeBuilder<E, W, V>;
+            } else {
+                let children = unsafe { (*node).children.as_mut().unwrap_unchecked() };
+
+                if let Some(child) = children
+                    .iter()
+                    .find(|child| child.key_part.as_ref() == Some(&key_part))
+                {
                     let child_const_ptr = child as *const NodeBuilder<E, W, V>;
                     node = child_const_ptr as *mut NodeBuilder<E, W, V>;
                 } else {
-                    let children = (*node).children.as_mut().unwrap();
+                    let key_part_cloned = key_part.clone();
+                    children.push(NodeBuilder::new(key_part_cloned));
 
-                    if let Some(child) = children
-                        .iter()
-                        .find(|child| child.key_part.as_ref() == Some(&key_part))
-                    {
-                        let child_const_ptr = child as *const NodeBuilder<E, W, V>;
-                        node = child_const_ptr as *mut NodeBuilder<E, W, V>;
-                    } else {
-                        let key_part_cloned = key_part.clone();
-                        children.push(NodeBuilder::new(key_part_cloned));
-
-                        let child = children
+                    let child = unsafe {
+                        children
                             .iter()
                             .find(|child| child.key_part.as_ref() == Some(&key_part))
-                            .unwrap();
-                        let child_const_ptr = child as *const NodeBuilder<E, W, V>;
-                        node = child_const_ptr as *mut NodeBuilder<E, W, V>;
-                    }
+                            .unwrap_unchecked()
+                    };
+
+                    let child_const_ptr = child as *const NodeBuilder<E, W, V>;
+                    node = child_const_ptr as *mut NodeBuilder<E, W, V>;
                 }
             }
+        }
 
+        unsafe {
             (*node).value = Some(value);
         }
     }
 
-    /// Insert a new value in an exact key path.
+    /// Insert a new value in an exact key path
     pub fn insert_exact(&mut self, key: impl IntoIterator<Item = E>, value: V) {
         self.insert(key.into_iter().map(KeyPart::Exact), value);
     }
 
-    /// Build the prefix tree map.
+    /// Build the prefix tree map
     pub fn build(self) -> PrefixTreeMap<E, W, V> {
         PrefixTreeMap {
             root: Self::node_builder_to_node(self.root),
